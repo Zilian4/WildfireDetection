@@ -35,6 +35,7 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=2):
             running_corrects = 0
 
             # Iterate over data.
+            count = 0
             for inputs, labels in dataloaders[phase]:
                 inputs = inputs.to(device)
                 labels = labels.to(device)
@@ -57,6 +58,8 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=2):
                 # statistics
                 running_loss += loss.item() * inputs.size(0)
                 running_corrects += torch.sum(preds == labels.data)
+                count += dataloaders[phase].batch_size
+                print('Training progress:', 100 * count / dataset_sizes[phase])
             if phase == 'train':
                 scheduler.step()
 
@@ -125,5 +128,5 @@ if __name__ == '__main__':
     # Decay LR by a factor of 0.1 every 7 epochs
     exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
 
-    # model_trident = train_model(model_trident, criterion, optimizer_ft, exp_lr_scheduler,
+    # model_trident = train_model(model, criterion, optimizer_ft, exp_lr_scheduler,
     #                             num_epochs=25)
