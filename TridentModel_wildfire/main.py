@@ -14,12 +14,45 @@ import time
 import os
 import copy
 from model import *
+import matplotlib.pyplot as plt
+
+
+def plot_loss_epoch(epochs, line1, line2):
+    plt.rc('axes', facecolor='white')
+    plt.rc('figure', figsize=(6, 4))
+    plt.rc('axes', grid=False)
+    plt.plot(range(1, epochs + 1), line1, '.:r', range(1, epochs + 1), line2, ':b')
+    plt.legend(['Train', "Validation"], loc='upper right')
+
+    plt.title('Loss-Epoch')
+    plt.ylabel('Loss')
+
+    plt.xlabel('Epoch')
+    plt.show()
+
+
+def plot_acc_epoch(epochs, line1, line2):
+    plt.rc('axes', facecolor='white')
+    plt.rc('figure', figsize=(6, 4))
+    plt.rc('axes', grid=False)
+    plt.plot(range(1, epochs + 1), line1, '.:r', range(1, epochs + 1), line2, ':b')
+    plt.legend(['Train', "Validation"], loc='upper right')
+
+    plt.title('Accuracy-Epoch')
+    plt.ylabel('Accuracy')
+
+    plt.xlabel('Epoch')
+    plt.show()
 
 
 def train_model(model, criterion, optimizer, scheduler, num_epochs=15, freeze_epoch=-1):
     since = time.time()
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
+
+    # Save losses and accuracy of each epoch
+    loss_list_train = [], acc_list_train = []
+    loss_list_val = [], acc_list_val = []
 
     for epoch in range(num_epochs):
 
@@ -70,11 +103,16 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=15, freeze_ep
                 running_corrects += torch.sum(preds == labels.data)
                 count += dataloaders['train'].batch_size
 
-            if phase == 'train':
-                scheduler.step()
-
             epoch_loss = running_loss / dataset_sizes[phase]
             epoch_acc = running_corrects.double() / dataset_sizes[phase]
+
+            if phase == 'train':
+                scheduler.step()
+                loss_list_train.append(running_loss)
+                acc_list_train.append(running_corrects)
+            else:
+                loss_list_val.append(running_loss)
+                acc_list_val.append(running_corrects)
 
             print(f'{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}')
 
@@ -86,8 +124,13 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=15, freeze_ep
         # print()
 
     time_elapsed = time.time() - since
+
     print(f'Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
     print(f'Best val Acc: {best_acc:4f}')
+
+    # show the linechart of loss and acc vs epochs in train set and val set
+    plot_loss_epoch(num_epochs, loss_list_train, loss_list_val)
+    plot_acc_epoch(num_epochs, acc_list_train, acc_list_val)
 
     # load best model weights
     model.load_state_dict(best_model_wts)
@@ -139,5 +182,6 @@ if __name__ == '__main__':
     # Decay LR by a factor of 0.1 every 7 epochs
     exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
 
-    model = train_model(model, criterion, optimizer_ft, exp_lr_scheduler, num_epochs=20,freeze_epoch=8)
+    model = train_model(model, criterion, optimizer_ft, exp_lr_scheduler, num_epochs=20, freeze_epoch=8)
+
     torch.save(model.state_dict(), "./Storage_model/" + str(model_name))
