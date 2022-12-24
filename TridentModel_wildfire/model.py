@@ -32,6 +32,7 @@ def get_model(name):
 class SwinTransformer(nn.Module):
     def __init__(self, num_class=2):
         super(SwinTransformer, self).__init__()
+        self.is_freeze = False
         self.num_class = num_class
         self.base = torchvision.models.swin_t(weights='IMAGENET1K_V1')
         self.base.head = nn.Identity()
@@ -42,10 +43,20 @@ class SwinTransformer(nn.Module):
         y = self.fc(h)
         return y
 
+    def set_freeze(self, is_freeze=False):
+        assert type(is_freeze) == bool, 'Wrong type of variable,requires bool'
+        self.is_freeze = is_freeze
+        if self.is_freeze:
+            for parameter in self.base.parameters():
+                parameter.requires_grad = self.is_freeze
+        else:
+            pass
+
 
 class Efficientnet(nn.Module):
     def __init__(self, num_class=2):
         super(Efficientnet, self).__init__()
+        self.is_freeze = False
         self.num_class = num_class
         self.base = torchvision.models.efficientnet_v2_s(weights='IMAGENET1K_V1')
         self.base.classifier = nn.Identity()
@@ -56,10 +67,20 @@ class Efficientnet(nn.Module):
         y = self.fc(h)
         return y
 
+    def set_freeze(self, is_freeze=False):
+        assert type(is_freeze) == bool, 'Wrong type of variable,requires bool'
+        self.is_freeze = is_freeze
+        if self.is_freeze:
+            for parameter in self.base.parameters():
+                parameter.requires_grad = self.is_freeze
+        else:
+            pass
+
 
 class Mobilenet(nn.Module):
     def __init__(self, num_class=2):
         super(Mobilenet, self).__init__()
+        self.is_freeze = False
         self.num_class = num_class
         self.base = torchvision.models.mobilenet_v3_small(weights='IMAGENET1K_V1')
         # self.base.classifier = nn.Identity()
@@ -70,10 +91,20 @@ class Mobilenet(nn.Module):
         y = self.fc(h)
         return y
 
+    def set_freeze(self, is_freeze=False):
+        assert type(is_freeze) == bool, 'Wrong type of variable,requires bool'
+        self.is_freeze = is_freeze
+        if self.is_freeze:
+            for parameter in self.base.parameters():
+                parameter.requires_grad = self.is_freeze
+        else:
+            pass
+
 
 class TridentNetwork(nn.Module):
     def __init__(self, num_class=2):
         super(TridentNetwork, self).__init__()
+        self.is_freeze = False
         self.num_class = num_class
         self.base1 = torchvision.models.mobilenet_v3_small(weights='IMAGENET1K_V1')
         self.base2 = torchvision.models.swin_t(weights='IMAGENET1K_V1')
@@ -95,6 +126,19 @@ class TridentNetwork(nn.Module):
         h = torch.cat((h1, h2, h3), -1)
         y = self.fc(h)
         return y
+
+    def set_freeze(self, is_freeze=False):
+        assert type(is_freeze) == bool, 'Wrong type of variable,requires bool'
+        self.is_freeze = is_freeze
+        if self.is_freeze:
+            for parameter in self.base1.parameters():
+                parameter.requires_grad = False
+            for parameter in self.base2.parameters():
+                parameter.requires_grad = False
+            for parameter in self.base3.parameters():
+                parameter.requires_grad = False
+        else:
+            pass
 
 
 if __name__ == "__main__":

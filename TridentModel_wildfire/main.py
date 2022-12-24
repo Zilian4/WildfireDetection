@@ -22,16 +22,16 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=15, freeze_ep
     best_acc = 0.0
 
     for epoch in range(num_epochs):
-        print(f'Epoch {epoch}/{num_epochs - 1}')
-        print('-' * 10)
 
         # Freeze model
         if epoch < freeze_epoch:
-            for parameter in model.base.parameters():
-                parameter.requires_grad = False
+            model.set_freeze(True)
         else:
-            for parameter in model.base.parameters():
-                parameter.requires_grad = True
+            model.set_freeze(False)
+
+        print(f'Epoch {epoch}/{num_epochs - 1},(Freeze Condition:{model.is_freeze})')
+        print('-' * 10)
+
         # Each epoch has a training and validation phase
         for phase in ['train', 'val']:
             if phase == 'train':
@@ -60,12 +60,13 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=15, freeze_ep
                     if phase == 'train':
                         loss.backward()
                         optimizer.step()
-                        print('Training Progress:{:.2f}%'.format(100 * count / dataset_sizes['train']),
-                              "-" * (10 * count / dataset_sizes['train']),
-                              end="")
+                        print('\rTraining Progress:{:.2f}%'.format(100 * count / dataset_sizes['train']),
+                              "-" * (10 * count // dataset_sizes['train']), end='')
                         sys.stdout.flush()
-                # statistics
-                running_loss += loss.item() * inputs.size(0)
+                        time.sleep(0.01)
+                    # statistics
+                    running_loss += loss.item() * inputs.size(0)
+
                 running_corrects += torch.sum(preds == labels.data)
                 count += dataloaders['train'].batch_size
 
@@ -82,7 +83,7 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=15, freeze_ep
                 best_acc = epoch_acc
                 best_model_wts = copy.deepcopy(model.state_dict())
 
-        print()
+        # print()
 
     time_elapsed = time.time() - since
     print(f'Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
@@ -113,7 +114,7 @@ if __name__ == '__main__':
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ]),
     }
-    data_dir = './ant_bee'
+    data_dir = './cat_dog'
     image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
                                               data_transforms[x])
                       for x in ['train', 'val']}
@@ -124,7 +125,7 @@ if __name__ == '__main__':
     class_names = image_datasets['train'].classes
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    model_name = 'Efficientnet'
+    model_name = 'TridentNetwork'
 
     model = get_model(model_name)
 
@@ -138,5 +139,5 @@ if __name__ == '__main__':
     # Decay LR by a factor of 0.1 every 7 epochs
     exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
 
-    model = train_model(model, criterion, optimizer_ft, exp_lr_scheduler, num_epochs=15,freeze_epoch=10)
-    torch.save(model.state_dict(), "./Storage_model" + str(model_name))
+    model = train_model(model, criterion, optimizer_ft, exp_lr_scheduler, num_epochs=20,freeze_epoch=8)
+    torch.save(model.state_dict(), "./Storage_model/" + str(model_name))
