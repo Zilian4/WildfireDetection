@@ -62,8 +62,8 @@ class Mobilenet(nn.Module):
         super(Mobilenet, self).__init__()
         self.num_class = num_class
         self.base = torchvision.models.mobilenet_v3_small(weights='IMAGENET1K_V1')
-        self.base.classifier = nn.Identity()
-        self.fc = nn.Linear(1024, num_class)
+        # self.base.classifier = nn.Identity()
+        self.fc = nn.Linear(1000, num_class)
 
     def forward(self, x):
         h = self.base(x)

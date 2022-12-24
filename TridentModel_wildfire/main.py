@@ -5,6 +5,7 @@ from __future__ import print_function, division
 import torchvision
 import torch
 import torch.nn as nn
+import sys
 import torch.optim as optim
 from torch.optim import lr_scheduler
 import torch.backends.cudnn as cudnn
@@ -15,7 +16,7 @@ import copy
 from model import *
 
 
-def train_model(model, criterion, optimizer, scheduler, num_epochs=2):
+def train_model(model, criterion, optimizer, scheduler, num_epochs=15, freeze_epoch=-1):
     since = time.time()
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
@@ -24,6 +25,13 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=2):
         print(f'Epoch {epoch}/{num_epochs - 1}')
         print('-' * 10)
 
+        # Freeze model
+        if epoch < freeze_epoch:
+            for parameter in model.base.parameters():
+                parameter.requires_grad = False
+        else:
+            for parameter in model.base.parameters():
+                parameter.requires_grad = True
         # Each epoch has a training and validation phase
         for phase in ['train', 'val']:
             if phase == 'train':
@@ -39,7 +47,6 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=2):
             for inputs, labels in dataloaders[phase]:
                 inputs = inputs.to(device)
                 labels = labels.to(device)
-
                 # zero the parameter gradients
                 optimizer.zero_grad()
 
@@ -49,17 +56,19 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=2):
                     outputs = model(inputs)
                     _, preds = torch.max(outputs, 1)
                     loss = criterion(outputs, labels)
-
                     # backward + optimize only if in training phase
                     if phase == 'train':
                         loss.backward()
                         optimizer.step()
-
+                        print('Training Progress:{:.2f}%'.format(100 * count / dataset_sizes['train']),
+                              "-" * (10 * count / dataset_sizes['train']),
+                              end="")
+                        sys.stdout.flush()
                 # statistics
                 running_loss += loss.item() * inputs.size(0)
                 running_corrects += torch.sum(preds == labels.data)
-                count += dataloaders[phase].batch_size
-                print('Training progress:', 100 * count / dataset_sizes[phase])
+                count += dataloaders['train'].batch_size
+
             if phase == 'train':
                 scheduler.step()
 
@@ -104,29 +113,30 @@ if __name__ == '__main__':
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ]),
     }
-
-    data_dir = './cat_dog'
+    data_dir = './ant_bee'
     image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
                                               data_transforms[x])
                       for x in ['train', 'val']}
-    dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=16,
-                                                  shuffle=True, num_workers=4)
+    dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=8,
+                                                  shuffle=True, num_workers=0)
                    for x in ['train', 'val']}
     dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
     class_names = image_datasets['train'].classes
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    model = get_model('Efficientnet')
+    model_name = 'Efficientnet'
+
+    model = get_model(model_name)
 
     model = model.to(device)
 
     criterion = nn.CrossEntropyLoss()
 
     # Observe that all parameters are being optimized
-    optimizer_ft = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+    optimizer_ft = optim.Adam(model.parameters(), lr=0.0001)
 
     # Decay LR by a factor of 0.1 every 7 epochs
     exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
 
-    # model_trident = train_model(model, criterion, optimizer_ft, exp_lr_scheduler,
-    #                             num_epochs=25)
+    model = train_model(model, criterion, optimizer_ft, exp_lr_scheduler, num_epochs=15,freeze_epoch=10)
+    torch.save(model.state_dict(), "./Storage_model" + str(model_name))
