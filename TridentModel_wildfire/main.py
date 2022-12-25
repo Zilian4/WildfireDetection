@@ -51,8 +51,10 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=15, freeze_ep
     best_acc = 0.0
 
     # Save losses and accuracy of each epoch
-    loss_list_train = [], acc_list_train = []
-    loss_list_val = [], acc_list_val = []
+    loss_list_train = []
+    acc_list_train = []
+    loss_list_val = []
+    acc_list_val = []
 
     for epoch in range(num_epochs):
 
@@ -108,11 +110,11 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=15, freeze_ep
 
             if phase == 'train':
                 scheduler.step()
-                loss_list_train.append(running_loss)
-                acc_list_train.append(running_corrects)
+                loss_list_train.append(epoch_loss)
+                acc_list_train.append(epoch_acc.cpu())
             else:
-                loss_list_val.append(running_loss)
-                acc_list_val.append(running_corrects)
+                loss_list_val.append(epoch_loss)
+                acc_list_val.append(epoch_acc.cpu())
 
             print(f'{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}')
 
@@ -157,7 +159,7 @@ if __name__ == '__main__':
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ]),
     }
-    data_dir = './cat_dog'
+    data_dir = './fire_nofire'
     image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
                                               data_transforms[x])
                       for x in ['train', 'val']}
@@ -182,6 +184,6 @@ if __name__ == '__main__':
     # Decay LR by a factor of 0.1 every 7 epochs
     exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
 
-    model = train_model(model, criterion, optimizer_ft, exp_lr_scheduler, num_epochs=20, freeze_epoch=8)
+    model = train_model(model, criterion, optimizer_ft, exp_lr_scheduler, num_epochs=21, freeze_epoch=8)
 
     torch.save(model.state_dict(), "./Storage_model/" + str(model_name))
