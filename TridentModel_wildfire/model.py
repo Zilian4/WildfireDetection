@@ -48,7 +48,7 @@ class SwinTransformer(nn.Module):
         self.is_freeze = is_freeze
         if self.is_freeze:
             for parameter in self.base.parameters():
-                parameter.requires_grad = self.is_freeze
+                parameter.requires_grad = False
         else:
             pass
 
@@ -72,7 +72,7 @@ class Efficientnet(nn.Module):
         self.is_freeze = is_freeze
         if self.is_freeze:
             for parameter in self.base.parameters():
-                parameter.requires_grad = self.is_freeze
+                parameter.requires_grad = False
         else:
             pass
 
@@ -96,7 +96,7 @@ class Mobilenet(nn.Module):
         self.is_freeze = is_freeze
         if self.is_freeze:
             for parameter in self.base.parameters():
-                parameter.requires_grad = self.is_freeze
+                parameter.requires_grad = False
         else:
             pass
 
