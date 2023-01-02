@@ -16,8 +16,11 @@ import os
 import PIL.Image as Image
 from model import *
 import torch.nn as nn
+import torchvision
+import torch
+
 paths = [
-     'fire5'
+    'fire5'
 ]
 cloud = np.zeros([len(paths)])
 # cloud[5] = 1
@@ -26,7 +29,7 @@ input_height = 224
 input_width = 224
 input_mean = 0
 input_std = 255
-threshold_alarm = 0.85
+threshold_alarm = 0.96
 red = (0, 0, 255)
 green = (0, 255, 0)
 threshold_daytime = 100
@@ -53,25 +56,18 @@ for pic in range(len(paths)):
         fireflag = False
         imgDir = glob.glob("./generate_video/image/" + videoName + "/original_image/*.jpg")[a]
         img = cv2.resize(cv2.imread(imgDir), (1920, 1080))
-        # img = Image.open(imgDir)
-        # if show_time:
-        #     region_mean = img[1:300, 1001:1300, :].mean()
-        # ----------------------
-        # data_in = transform(img).resize(1, 3, 224, 224)
-        # data_out = model(data_in)
-        # out_P = data_out.exp() / data_out.exp().sum()
-        # print(out_P)
-        # _, pre = torch.max(data_out, 1)
-        # print('Condition:', is_fire[pre.item()])
-        # ------------------------
+        img_PIL = img.copy()
+        img_PIL[:, :, 0] = img[:, :, 2]
+        img_PIL[:, :, 2] = img[:, :, 0]
         for h in range(5):
             for w in range(9):
                 sub_image = img[h * 180:h * 180 + 359, w * 180 + 60:w * 180 + 359 + 60, :]
                 data_in = transform(Image.fromarray(sub_image)).resize(1, 3, 224, 224)
                 data_out = model(data_in)
                 # output the Probability of the occurrence of wildfire
-                # out_P = data_out.exp() / data_out.exp().sum()
-                results[h * 9 + w, :] = data_out.numpy(force=True)
+                out_P = nn.functional.softmax(data_out,1)
+                # out_P = nn.functional.softmax(data_out,1)
+                results[h * 9 + w, :] = out_P.numpy(force=True)
         # input = transform(img)
         # output = model(input)
         for w in range(7):
@@ -91,15 +87,9 @@ for pic in range(len(paths)):
                         color = green
                     cv2.putText(img, str(results[h * 9 + w][0] * 100)[0:5] + "%", (w * 180 + 60, h * 180 + 30),
                                 cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
-        # if show_time:
-        #     if region_mean > threshold_daytime:
-        #         cv2.putText(img, str(region_mean)[0:5] + "daytime", (120, 130), cv2.FONT_HERSHEY_SIMPLEX, 1, red, 2)
-        #     else:
-        #         cv2.putText(img, str(region_mean)[0:5] + "night", (120, 130), cv2.FONT_HERSHEY_SIMPLEX, 1, red, 2)
         cv2.imwrite("./generate_video/image/" + videoName + "/result/" + str(a + 1) + '.jpg', img)
 
         print('Dataset:{},Number of image:{}'.format(videoName, str(a)))
         # tf.reset_default_graph()
         if fireflag:
             firenum += 1
-

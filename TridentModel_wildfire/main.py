@@ -45,7 +45,6 @@ def plot_acc_epoch(epochs, line1, line2):
     plt.show()
 
 
-
 def train_model(model, criterion, optimizer, scheduler, num_epochs=15, freeze_epoch=-1):
     since = time.time()
     best_model_wts = copy.deepcopy(model.state_dict())
@@ -161,10 +160,11 @@ if __name__ == '__main__':
         ]),
     }
     data_dir = './data/wild_fire_train'
+    # data_dir = './data_pandie'
     image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
                                               data_transforms[x])
                       for x in ['train', 'val']}
-    dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=64,
+    dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=128,
                                                   shuffle=True, num_workers=4)
                    for x in ['train', 'val']}
     dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
@@ -185,8 +185,7 @@ if __name__ == '__main__':
     # Decay LR by a factor of 0.1 every 7 epochs
     exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
 
-    model = train_model(model, criterion, optimizer_ft, exp_lr_scheduler, num_epochs=20,)
+    model = train_model(model, criterion, optimizer_ft, exp_lr_scheduler, num_epochs=20, freeze_epoch=10)
 
     torch.save(model.state_dict(), "./Storage_model/" + str(model_name))
-    model.load_state_dict(torch.load('./Storage_model/TridentNetwork'))
-
+    # model.load_state_dict(torch.load('./Storage_model/TridentNetwork_multi_linear_with_freeze_five'))

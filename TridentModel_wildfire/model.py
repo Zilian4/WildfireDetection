@@ -117,9 +117,8 @@ class TridentNetwork(nn.Module):
         self.base1.classifier[-1] = nn.Identity()
         self.base2.head = nn.Identity()
         self.base3.classifier[-1] = nn.Identity()
-        self.fc1 = nn.Linear(1024 + 768 + 1280, 1024)
-        self.fc2 = nn.Linear(1024, 256)
-        self.fc3 = nn.Linear(256, self.num_class)
+        self.fc1 = nn.Linear(1024 + 768 + 1280, 512)
+        self.fc2 = nn.Linear(512,self.num_class)
 
     def forward(self, x):
         h1 = self.base1(x)
@@ -127,10 +126,10 @@ class TridentNetwork(nn.Module):
         h3 = self.base3(x)
         h = torch.cat((h1, h2, h3), -1)
         y = self.fc1(h)
+        y = nn.functional.leaky_relu(y)
         y = self.fc2(y)
-        y = self.fc3(y)
-        y_p = nn.functional.softmax(y, 1)
-        return y_p
+
+        return y
 
     def set_freeze(self, is_freeze=False):
         assert type(is_freeze) == bool, 'Wrong type of variable,requires bool'
